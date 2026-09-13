@@ -35,6 +35,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
 .stage-card.active{border:2px solid var(--gold);background:#fffdf4}.stage-card.locked{opacity:.5;cursor:not-allowed}.stage-card .num{font-size:11px;color:var(--muted);font-weight:800}.stage-card h3{font-size:14px;margin:7px 0}.stage-card p{font-size:12px;color:var(--muted);margin:0;line-height:1.4}
 .panel{margin-top:24px}.hidden{display:none!important}.center{text-align:center}.muted{color:var(--muted)}.note{background:#f7f9fd;border-left:4px solid var(--gold);padding:13px 15px;border-radius:10px;line-height:1.55}
 .profile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}.field label{display:block;font-weight:800;font-size:13px;margin-bottom:7px}.field input{width:100%;padding:13px 14px;border:1px solid #dce2ec;border-radius:13px;outline:none;background:#fbfcfe}.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,90,166,.1)}
+.builder-result{min-height:22px;margin:8px 0 0;font-size:13px;font-weight:800}.builder-result.ok{color:var(--green)}.builder-result.retry{color:var(--red)}
 .category-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}.category{border:1px solid #e5e9f0;border-radius:18px;padding:18px;background:#fff}.category h3{margin:0 0 12px;font-size:16px}.choices{display:flex;flex-wrap:wrap;gap:8px}.choice{border:1px solid #dce2ec;background:#fff;border-radius:12px;padding:9px 11px}.choice.selected{background:#edf4ff;border-color:var(--blue);color:var(--navy);font-weight:800}.word-bank{display:flex;flex-wrap:wrap;gap:9px;padding:16px;background:#f7f9fd;border-radius:16px;min-height:58px}.word{border:1px solid #d9dfeb;background:white;border-radius:10px;padding:9px 12px;font-weight:700}.sentence{min-height:70px;border:2px dashed #cbd4e4;border-radius:16px;padding:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:15px}.sentence .word{background:#102f70;color:white;border-color:#102f70}.conversation{background:#f8faff;border-radius:18px;padding:18px;margin-top:18px}.bubble{max-width:82%;padding:12px 15px;border-radius:17px;margin:9px 0;line-height:1.5}.bubble.a{background:white;border:1px solid #e1e6ef}.bubble.b{background:#102f70;color:white;margin-left:auto}.role{font-size:11px;font-weight:900;opacity:.65;margin-bottom:3px}
 .ai-box{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:center}.avatar{height:220px;border-radius:24px;background:linear-gradient(145deg,#eaf2ff,#fff7df);display:flex;align-items:center;justify-content:center;font-size:80px;border:1px solid #e4e9f1}
 .ai-status{padding:13px;border-radius:14px;background:#f7f9fd;margin:12px 0;font-weight:700}.mic{width:88px;height:88px;border-radius:50%;border:0;background:#102f70;color:white;font-size:32px;box-shadow:0 12px 25px rgba(16,47,112,.2)}.mic.listening{background:#b83b3b;animation:pulse 1.1s infinite}@keyframes pulse{50%{transform:scale(1.08)}}
@@ -77,6 +78,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
 <section class="card panel" id="stage1">
  <span class="kicker">Stage 1</span><h2>🧩 All About Me</h2>
  <p class="muted">Enter your information, then choose vocabulary from the picture-inspired cards.</p>
+ <div class="note" id="profileProgress" aria-live="polite">0/9 information fields complete.</div>
  <div class="profile-grid" id="profileFields"></div>
  <div class="category-grid" id="categories"></div>
  <div class="actions"><button class="btn primary" onclick="completeStage1()">Save & continue →</button></div>
@@ -172,17 +174,24 @@ function init(){
  renderProfile();renderCategories();renderBuilder();renderConversation();renderAI();renderStory();renderCertificate();renderStats();goStage(Math.min(5,state.stage||1));
 }
 function renderProfile(){
- document.getElementById("profileFields").innerHTML=fields.map(([id,label,ph])=>`<div class="field"><label>${label}</label><input id="f_${id}" value="${esc(state.profile[id]||"")}" placeholder="${ph}"></div>`).join("");
+ document.getElementById("profileFields").innerHTML=fields.map(([id,label,ph])=>`<div class="field"><label>${label}</label><input id="f_${id}" value="${esc(state.profile[id]||"")}" placeholder="${ph}" oninput="updateProfileProgress()"></div>`).join("");
+ updateProfileProgress();
+}
+function updateProfileProgress(){
+ const complete=fields.filter(([id])=>(document.getElementById("f_"+id)?.value||"").trim()).length;
+ const progress=document.getElementById("profileProgress");
+ if(progress)progress.textContent=`${complete}/${fields.length} information fields complete${complete===fields.length?". You are ready to build your story!":". Keep going!"}`;
 }
 function renderCategories(){
  document.getElementById("categories").innerHTML=Object.entries(choices).map(([id,arr])=>`<div class="category"><h3>${labelFor(id)}</h3><div class="choices">${arr.map(x=>`<button class="choice ${state.profile[id]===x?"selected":""}" onclick="choose('${id}','${x}')">${cap(x)}</button>`).join("")}</div></div>`).join("");
 }
 function labelFor(id){return id.replace("best","Best ").replace(/^./,c=>c.toUpperCase())}
 function cap(s){return s.replace(/\b\w/g,c=>c.toUpperCase())}
-function choose(id,x){state.profile[id]=x;document.getElementById("f_"+id).value=x;renderCategories();save()}
+function choose(id,x){state.profile[id]=x;document.getElementById("f_"+id).value=x;renderCategories();updateProfileProgress();save()}
 function collectProfile(){fields.forEach(([id])=>state.profile[id]=(document.getElementById("f_"+id)?.value||"").trim())}
 function completeStage1(){
  collectProfile();
+ updateProfileProgress();
  const missing=fields.filter(([id])=>!state.profile[id]);
  if(missing.length){toast("Please complete: "+missing[0][1]);return}
  awardStage(1,10,1);
@@ -196,6 +205,7 @@ function renderBuilder(){
  wrap.innerHTML=questions.map((q,i)=>`<div class="category" style="margin-top:16px">
  <h3>${i+1}. ${q[1]}</h3><p class="muted">💡 Hint: use the highlighted information about you.</p>
  <div class="sentence" id="sent_${i}"></div>
+ <div class="builder-result" id="result_${i}"></div>
  <div class="word-bank" id="bank_${i}"></div></div>`).join("");
  questions.forEach((q,i)=>renderWords(i));
  renderConversation();
@@ -221,9 +231,10 @@ function addWord(i,j){
  const used=state.built[i].filter(x=>x===word).length;
  const available=target.filter(x=>x===word).length;
  if(used>=available)return;
- state.built[i].push(word);renderWords(i);renderConversation();save();
+ state.built[i].push(word);clearBuilderResult(i);renderWords(i);renderConversation();save();
 }
-function removeWord(i,j){state.built[i].splice(j,1);renderWords(i);renderConversation();save()}
+function removeWord(i,j){state.built[i].splice(j,1);clearBuilderResult(i);renderWords(i);renderConversation();save()}
+function clearBuilderResult(i){const result=document.getElementById("result_"+i);if(result){result.textContent="";result.className="builder-result"}}
 function renderConversation(){
  const c=document.getElementById("builtConversation");
  c.innerHTML="<h3>💬 Your conversation</h3>"+questions.map((q,i)=>`<div class="bubble a"><div class="role">A</div>${esc(q[1])}</div><div class="bubble b"><div class="role">B</div>${esc(sentenceFor(q))}</div>`).join("");
@@ -240,6 +251,7 @@ function completeStage2(){
  document.getElementById("builderFeedback").textContent=score===questions.length
   ? `Excellent! ${score}/${questions.length} answers are correct. You can continue.`
   : `${score}/${questions.length} answers are correct. Check the order and try again.`;
+ results.forEach((correct,i)=>{const result=document.getElementById("result_"+i);if(result){result.textContent=correct?"✓ Correct sentence":"Try again: check the word order";result.className=`builder-result ${correct?"ok":"retry"}`}});
  save();
  if(score<questions.length){toast("Some answers need another try.");return}
  awardStage(2,20,2);
