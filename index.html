@@ -40,7 +40,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
 .ai-box{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:center}.avatar{height:220px;border-radius:24px;background:linear-gradient(145deg,#eaf2ff,#fff7df);display:flex;align-items:center;justify-content:center;font-size:80px;border:1px solid #e4e9f1}
 .ai-status{padding:13px;border-radius:14px;background:#f7f9fd;margin:12px 0;font-weight:700}.mic{width:88px;height:88px;border-radius:50%;border:0;background:#102f70;color:white;font-size:32px;box-shadow:0 12px 25px rgba(16,47,112,.2)}.mic.listening{background:#b83b3b;animation:pulse 1.1s infinite}@keyframes pulse{50%{transform:scale(1.08)}}
 .paragraph{font-size:22px;line-height:2;background:#fffdf7;border:1px solid #eadfb9;border-radius:18px;padding:24px}.read-word{padding:1px 3px;border-radius:5px}.read-word.current{background:#fff0a6}.read-word.ok{color:var(--green)}.read-word.bad{color:var(--red);text-decoration:underline}
-.camera-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.video-box{background:#101a2d;border-radius:20px;overflow:hidden;min-height:330px;display:flex;align-items:center;justify-content:center}.video-box video{width:100%;height:100%;object-fit:cover}.certificate{background:white;border:8px double var(--gold);padding:34px;text-align:center;min-height:330px;display:flex;flex-direction:column;justify-content:center;position:relative}.certificate:before{content:"✦";position:absolute;top:10px;left:18px;color:var(--gold);font-size:30px}.certificate h2{color:var(--navy);font-family:Georgia,serif;font-size:28px;margin:8px}.certificate .name{font-size:30px;font-weight:900;color:#1f5aa6;margin:14px}.certificate .lesson{font-size:20px;font-weight:900}.certificate p{line-height:1.65}.recording-canvas{display:none}
+.camera-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.video-box{background:#101a2d;border-radius:20px;overflow:hidden;min-height:330px;display:flex;align-items:center;justify-content:center}.video-box video{width:100%;height:100%;object-fit:cover}.certificate{background:white;border:8px double var(--gold);padding:34px;text-align:center;min-height:330px;display:flex;flex-direction:column;justify-content:center;position:relative}.certificate:before{content:"✦";position:absolute;top:10px;left:18px;color:var(--gold);font-size:30px}.certificate h2{color:var(--navy);font-family:Georgia,serif;font-size:28px;margin:8px}.certificate .name{font-size:30px;font-weight:900;color:#1f5aa6;margin:14px}.certificate .lesson{font-size:20px;font-weight:900}.certificate p{line-height:1.65}.recording-canvas{display:none}.recording-preview{display:none;width:100%;margin-top:18px;border-radius:18px;background:#101a2d}.recording-preview.visible{display:block}
 .toast{position:fixed;right:18px;bottom:18px;background:#102f70;color:white;padding:13px 16px;border-radius:13px;box-shadow:var(--shadow);z-index:50;opacity:0;transform:translateY(15px);transition:.25s}.toast.show{opacity:1;transform:none}
 .footer{text-align:center;color:#7b8495;font-size:12px;margin:35px 0}.lock{font-size:18px}
 @media(max-width:850px){.hero{grid-template-columns:1fr}.stage-grid{grid-template-columns:repeat(2,1fr)}.category-grid{grid-template-columns:1fr}.ai-box{grid-template-columns:1fr}.camera-layout{grid-template-columns:1fr}.profile-grid{grid-template-columns:1fr}.progress-wrap{display:none}}
@@ -132,6 +132,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
  </div>
  <div class="actions"><button class="btn primary" onclick="startCamera()">📹 Open camera</button><button class="btn dark" onclick="startFinalRecording()">⏺ Record achievement</button><button class="btn secondary" onclick="stopFinalRecording()">⏹ Stop</button></div>
  <canvas id="recordingCanvas" class="recording-canvas" width="1280" height="720"></canvas>
+ <video id="recordingPreview" class="recording-preview" autoplay muted playsinline></video>
  <div id="recordingStatus" class="note" style="margin-top:15px">The recording will include the student and certificate together, then download automatically.</div>
  <div class="actions"><button class="btn success" onclick="finishGame()">🎉 Complete My English Story</button></div>
 </section>
@@ -364,16 +365,19 @@ function drawRecordingFrame(){
 }
 function supportedRecordingType(){return ["video/mp4;codecs=h264,aac","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(type=>window.MediaRecorder?.isTypeSupported?.(type))||""}
 async function startFinalRecording(){
- const camera=document.getElementById("camera"),recordingStatus=document.getElementById("recordingStatus");
+ const camera=document.getElementById("camera"),recordingPreview=document.getElementById("recordingPreview"),recordingStatus=document.getElementById("recordingStatus");
  if(!stream)await startCamera();
  if(!stream){toast("Camera access is required for recording.");return}
  if(camera.readyState<2||!camera.videoWidth){toast("Camera is still starting. Try recording again in a moment.");return}
  const canvas=document.getElementById("recordingCanvas");
  if(!canvas.captureStream||!window.MediaRecorder){recordingStatus.textContent="This browser cannot record a combined camera and certificate video. Please use a current Chrome, Edge, Firefox, or Safari browser.";return}
  const mimeType=supportedRecordingType();if(!mimeType){recordingStatus.textContent="Video recording is not supported by this browser.";return}
- chunks=[];recordingCanvasStream=canvas.captureStream(30);stream.getAudioTracks().forEach(track=>recordingCanvasStream.addTrack(track));
+ const audioTracks=stream.getAudioTracks().filter(track=>track.readyState==="live");
+ if(!audioTracks.length){recordingStatus.textContent="The microphone is not available. Please reopen the camera and allow microphone access.";return}
+ chunks=[];recordingCanvasStream=canvas.captureStream(30);audioTracks.forEach(track=>recordingCanvasStream.addTrack(track));
+ recordingPreview.srcObject=recordingCanvasStream;recordingPreview.classList.add("visible");await recordingPreview.play();
  recorder=new MediaRecorder(recordingCanvasStream,{mimeType});recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
- recorder.onstop=()=>{cancelAnimationFrame(recordingAnimation);recordingCanvasStream?.getVideoTracks().forEach(track=>track.stop());const extension=mimeType.includes("mp4")?"mp4":"webm",blob=new Blob(chunks,{type:mimeType}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`my-english-story-achievement.${extension}`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);recordingStatus.textContent=`Recording downloaded as ${extension.toUpperCase()}.`;toast("Your achievement video was downloaded.")};
+ recorder.onstop=()=>{cancelAnimationFrame(recordingAnimation);recordingPreview.pause();recordingPreview.srcObject=null;recordingPreview.classList.remove("visible");recordingCanvasStream?.getTracks().forEach(track=>track.stop());const extension=mimeType.includes("mp4")?"mp4":"webm",blob=new Blob(chunks,{type:mimeType}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`my-english-story-achievement.${extension}`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);recordingStatus.textContent=`Recording downloaded as ${extension.toUpperCase()}.`;toast("Your achievement video was downloaded.")};
  drawRecordingFrame();recorder.start(250);recordingStatus.textContent="⏺ Recording student and certificate together…";setTimeout(()=>{if(recorder?.state==="recording")stopFinalRecording()},30000)
 }
 function stopFinalRecording(){if(recorder&&recorder.state==="recording"){recorder.stop();recordingStatus.textContent="Finishing and downloading recording…"}}
