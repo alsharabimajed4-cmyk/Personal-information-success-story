@@ -20,6 +20,7 @@
 .brand strong{display:block;color:var(--navy);font-size:17px}.brand small{color:#68738a}.progress-wrap{width:min(430px,42vw)}
 .progress{height:9px;background:#e9edf5;border-radius:99px;overflow:hidden}.progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--navy),var(--gold));transition:.35s;width:20%}
 .stage-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
+.game-stats{display:flex;gap:8px;align-items:center;margin-left:18px}.stat{background:#fff8df;border:1px solid #eadfb9;border-radius:12px;padding:8px 11px;font-size:13px;font-weight:800;color:#765c00;white-space:nowrap}
 .main{width:min(1120px,calc(100% - 28px));margin:28px auto 60px}.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:stretch}
 .card{background:var(--card);border:1px solid #e8ebf2;border-radius:var(--radius);box-shadow:var(--shadow);padding:28px}
 .hero .card:first-child{background:linear-gradient(135deg,#102f70,#174d9b);color:white;overflow:hidden;position:relative}
@@ -49,6 +50,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
 <header class="topbar">
  <div class="brand"><img src="assets/logo.png" alt="First British Center logo"><div><strong>The First British Center</strong><small>Online Education</small></div></div>
  <div class="progress-wrap"><div class="stage-label"><span id="stageText">Stage 1 of 5</span><span id="percent">20%</span></div><div class="progress"><i id="progress"></i></div></div>
+ <div class="game-stats" aria-label="Game score"><span class="stat">⭐ <span id="starCount">0</span></span><span class="stat">🏅 <span id="pointCount">0</span></span></div>
 </header>
 
 <main class="main">
@@ -84,6 +86,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
 <section class="card panel hidden" id="stage2">
  <span class="kicker">Stage 2</span><h2>🧱 Build My Conversation</h2>
  <div class="note">Build each answer by tapping the words in the correct order. Your finished conversation appears below.</div>
+ <div class="note" id="builderFeedback" style="margin-top:15px">Build every answer, then check your work.</div>
  <div id="builder"></div>
  <div class="actions"><button class="btn secondary" onclick="goStage(1)">← Back</button><button class="btn primary" onclick="completeStage2()">Complete stage →</button></div>
  <div class="conversation" id="builtConversation"></div>
@@ -155,12 +158,18 @@ const questions=[
  ["bestSport","What's your best sport?","My best sport is {answer}."],
  ["bestHobby","What's your best hobby?","My best hobby is {answer}."]
 ];
-let state=load()||{stage:1,profile:{},built:[],ai:[],roleSwap:false,reading:false};
+let state=load()||{stage:1,profile:{},built:[],ai:[],roleSwap:false,reading:false,builderAttempts:0,builderScore:0,points:0,stars:0,awards:{}};
 function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));document.getElementById("saveState").textContent="Saved just now";setTimeout(()=>document.getElementById("saveState").textContent="Saved locally",800)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function renderStats(){document.getElementById("starCount").textContent=state.stars||0;document.getElementById("pointCount").textContent=state.points||0}
+function awardStage(stage,points,stars){
+ state.awards=state.awards||{};
+ if(state.awards[stage])return;
+ state.awards[stage]=true;state.points=(state.points||0)+points;state.stars=(state.stars||0)+stars;renderStats();toast(`+${points} points and ${stars} star${stars===1?"":"s"}!`);
+}
 function init(){
- renderProfile();renderCategories();renderBuilder();renderConversation();renderAI();renderStory();renderCertificate();goStage(Math.min(5,state.stage||1));
+ renderProfile();renderCategories();renderBuilder();renderConversation();renderAI();renderStory();renderCertificate();renderStats();goStage(Math.min(5,state.stage||1));
 }
 function renderProfile(){
  document.getElementById("profileFields").innerHTML=fields.map(([id,label,ph])=>`<div class="field"><label>${label}</label><input id="f_${id}" value="${esc(state.profile[id]||"")}" placeholder="${ph}"></div>`).join("");
@@ -176,6 +185,7 @@ function completeStage1(){
  collectProfile();
  const missing=fields.filter(([id])=>!state.profile[id]);
  if(missing.length){toast("Please complete: "+missing[0][1]);return}
+ awardStage(1,10,1);
  state.stage=Math.max(state.stage,2);save();renderBuilder();goStage(2);
 }
 function answerFor(q){return state.profile[q[0]]||"________"}
@@ -189,28 +199,50 @@ function renderBuilder(){
  <div class="word-bank" id="bank_${i}"></div></div>`).join("");
  questions.forEach((q,i)=>renderWords(i));
  renderConversation();
+ document.getElementById("builderFeedback").textContent=`Best score: ${state.builderScore||0}/${questions.length}. Build every answer, then check your work.`;
 }
 function renderWords(i){
  const q=questions[i], target=sentenceFor(q).replace(/[?.]/g,"").split(/\s+/);
  const existing=(state.built[i]||[]).length?state.built[i]:[];
  document.getElementById("sent_"+i).innerHTML=existing.map((w,j)=>`<button class="word" onclick="removeWord(${i},${j})">${esc(w)}</button>`).join("")||'<span class="muted">Tap words below to build your answer.</span>';
  const used={};existing.forEach(w=>used[w]=(used[w]||0)+1);
- const bank=shuffle(target.map((w,j)=>({w,j}))).map(({w,j})=>`<button class="word" ${used[w]?`data-used="1"`:""} onclick="addWord(${i},${j},'${w.replace(/'/g,"&#39;")}')">${esc(w)}</button>`).join("");
+ const available={};target.forEach(w=>available[w]=(available[w]||0)+1);
+ const bank=shuffle(target.map((w,j)=>({w,j}))).map(({w,j})=>{
+  const disabled=(used[w]||0)>=(available[w]||0)||existing.length>=target.length;
+  return `<button class="word" ${disabled?"disabled":""} onclick="addWord(${i},${j})">${esc(w)}</button>`;
+ }).join("");
  document.getElementById("bank_"+i).innerHTML=bank;
 }
-function addWord(i,j,w){
+function addWord(i,j){
  state.built[i]=state.built[i]||[];
  const target=sentenceFor(questions[i]).replace(/[?.]/g,"").split(/\s+/);
- const word=target[j]; state.built[i].push(word);renderWords(i);save();
+ if(state.built[i].length>=target.length)return;
+ const word=target[j];
+ const used=state.built[i].filter(x=>x===word).length;
+ const available=target.filter(x=>x===word).length;
+ if(used>=available)return;
+ state.built[i].push(word);renderWords(i);renderConversation();save();
 }
-function removeWord(i,j){state.built[i].splice(j,1);renderWords(i);save()}
+function removeWord(i,j){state.built[i].splice(j,1);renderWords(i);renderConversation();save()}
 function renderConversation(){
  const c=document.getElementById("builtConversation");
  c.innerHTML="<h3>💬 Your conversation</h3>"+questions.map((q,i)=>`<div class="bubble a"><div class="role">A</div>${esc(q[1])}</div><div class="bubble b"><div class="role">B</div>${esc(sentenceFor(q))}</div>`).join("");
 }
 function completeStage2(){
- const incomplete=questions.findIndex((q,i)=>!state.built[i]||state.built[i].length===0);
- if(incomplete>=0){toast("Build answer "+(incomplete+1)+" first.");return}
+ const results=questions.map((q,i)=>{
+  const expected=sentenceFor(q).replace(/[?.]/g,"").toLowerCase().split(/\s+/).join(" ");
+  const actual=(state.built[i]||[]).join(" ").toLowerCase();
+  return expected===actual;
+ });
+ const score=results.filter(Boolean).length;
+ state.builderAttempts=(state.builderAttempts||0)+1;
+ state.builderScore=Math.max(state.builderScore||0,score);
+ document.getElementById("builderFeedback").textContent=score===questions.length
+  ? `Excellent! ${score}/${questions.length} answers are correct. You can continue.`
+  : `${score}/${questions.length} answers are correct. Check the order and try again.`;
+ save();
+ if(score<questions.length){toast("Some answers need another try.");return}
+ awardStage(2,20,2);
  state.stage=Math.max(state.stage,3);save();renderAI();goStage(3);
 }
 let aiIndex=0;
@@ -246,6 +278,7 @@ function acceptPracticeAnswer(){const v=document.getElementById("practiceAnswer"
 function swapRoles(){state.roleSwap=!state.roleSwap;aiIndex=0;toast(state.roleSwap?"Roles swapped: you ask, AI answers.":"Roles restored: AI asks, you answer.");renderAI();save();speak(document.getElementById("aiQuestion").textContent)}
 function completeStage3(){
  if((state.ai||[]).length<6){toast("Have a few turns with the AI first.");return}
+ awardStage(3,20,2);
  state.stage=Math.max(state.stage,4);save();renderStory();goStage(4);
 }
 function storyText(){return questions.map(q=>sentenceFor(q)).join(" ")}
@@ -269,6 +302,7 @@ function startReading(){
  r.start();
 }
 function completeStage4(){
+ awardStage(4,20,2);
  state.stage=Math.max(state.stage,5);save();renderCertificate();goStage(5);
 }
 let stream=null,recorder=null,chunks=[];
@@ -287,7 +321,7 @@ function renderCertificate(){
  const name=[state.profile.firstName,state.profile.lastName].filter(Boolean).join(" ")||"Student Name";
  document.getElementById("certificate").innerHTML=`<div class="kicker">The First British Center for Online Education</div><h2>🏆 Certificate of Achievement</h2><div>proudly presented to</div><div class="name">${esc(name)}</div><div>for successfully completing</div><div class="lesson">MY ENGLISH STORY</div><p>I have learned to introduce myself, talk about my life, ask and answer questions, have a conversation in English, and read my own English story.</p><p><strong>Thank you to The First British Center Online, my teacher, and my parents.</strong></p>`;
 }
-function finishGame(){state.completed=true;save();toast("🎉 Congratulations! My English Story is complete.");}
+function finishGame(){awardStage(5,30,3);state.completed=true;save();toast("🎉 Congratulations! My English Story is complete.");}
 function goStage(n){
  if(n>state.stage){toast("Complete the previous stage first.");return}
  document.querySelectorAll(".panel").forEach(x=>x.classList.add("hidden"));document.getElementById("stage"+n).classList.remove("hidden");
