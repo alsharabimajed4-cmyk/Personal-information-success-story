@@ -40,7 +40,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
 .ai-box{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:center}.avatar{height:220px;border-radius:24px;background:linear-gradient(145deg,#eaf2ff,#fff7df);display:flex;align-items:center;justify-content:center;font-size:80px;border:1px solid #e4e9f1}
 .ai-status{padding:13px;border-radius:14px;background:#f7f9fd;margin:12px 0;font-weight:700}.mic{width:88px;height:88px;border-radius:50%;border:0;background:#102f70;color:white;font-size:32px;box-shadow:0 12px 25px rgba(16,47,112,.2)}.mic.listening{background:#b83b3b;animation:pulse 1.1s infinite}@keyframes pulse{50%{transform:scale(1.08)}}
 .paragraph{font-size:22px;line-height:2;background:#fffdf7;border:1px solid #eadfb9;border-radius:18px;padding:24px}.read-word{padding:1px 3px;border-radius:5px}.read-word.current{background:#fff0a6}.read-word.ok{color:var(--green)}.read-word.bad{color:var(--red);text-decoration:underline}
-.camera-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.video-box{background:#101a2d;border-radius:20px;overflow:hidden;min-height:330px;display:flex;align-items:center;justify-content:center}.video-box video{width:100%;height:100%;object-fit:cover}.certificate{background:white;border:8px double var(--gold);padding:34px;text-align:center;min-height:330px;display:flex;flex-direction:column;justify-content:center;position:relative}.certificate:before{content:"✦";position:absolute;top:10px;left:18px;color:var(--gold);font-size:30px}.certificate h2{color:var(--navy);font-family:Georgia,serif;font-size:28px;margin:8px}.certificate .name{font-size:30px;font-weight:900;color:#1f5aa6;margin:14px}.certificate .lesson{font-size:20px;font-weight:900}.certificate p{line-height:1.65}.recording-canvas{display:none}
+.camera-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.video-box{background:#101a2d;border-radius:20px;overflow:hidden;min-height:330px;display:flex;align-items:center;justify-content:center}.video-box video{width:100%;height:100%;object-fit:cover}.certificate{background:white;border:8px double var(--gold);padding:34px;text-align:center;min-height:330px;display:flex;flex-direction:column;justify-content:center;position:relative}.certificate:before{content:"✦";position:absolute;top:10px;left:18px;color:var(--gold);font-size:30px}.certificate h2{color:var(--navy);font-family:Georgia,serif;font-size:28px;margin:8px}.certificate .name{font-size:30px;font-weight:900;color:#1f5aa6;margin:14px}.certificate .lesson{font-size:20px;font-weight:900}.certificate p{line-height:1.65}.recording-canvas{display:none}.recording-preview{display:none;width:100%;margin-top:18px;border-radius:18px;background:#101a2d}.recording-preview.visible{display:block}
 .toast{position:fixed;right:18px;bottom:18px;background:#102f70;color:white;padding:13px 16px;border-radius:13px;box-shadow:var(--shadow);z-index:50;opacity:0;transform:translateY(15px);transition:.25s}.toast.show{opacity:1;transform:none}
 .footer{text-align:center;color:#7b8495;font-size:12px;margin:35px 0}.lock{font-size:18px}
 @media(max-width:850px){.hero{grid-template-columns:1fr}.stage-grid{grid-template-columns:repeat(2,1fr)}.category-grid{grid-template-columns:1fr}.ai-box{grid-template-columns:1fr}.camera-layout{grid-template-columns:1fr}.profile-grid{grid-template-columns:1fr}.progress-wrap{display:none}}
@@ -81,7 +81,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
  <div class="note" id="profileProgress" aria-live="polite">0/9 information fields complete.</div>
  <div class="profile-grid" id="profileFields"></div>
  <div class="category-grid" id="categories"></div>
- <div class="actions"><button class="btn primary" onclick="completeStage1()">Save & continue →</button></div>
+ <div class="actions"><button class="btn primary" onclick="completeStage1()">Save & continue →</button><button class="btn secondary" onclick="reviewStage(1)">Review answers</button></div>
 </section>
 
 <!-- STAGE 2 -->
@@ -90,7 +90,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
  <div class="note">Build each answer by tapping the words in the correct order. Your finished conversation appears below.</div>
  <div class="note" id="builderFeedback" style="margin-top:15px">Build every answer, then check your work.</div>
  <div id="builder"></div>
- <div class="actions"><button class="btn secondary" onclick="goStage(1)">← Back</button><button class="btn primary" onclick="completeStage2()">Complete stage →</button></div>
+ <div class="actions"><button class="btn secondary" onclick="reviewStage(1)">← Edit information</button><button class="btn primary" onclick="completeStage2()">Check answers →</button></div>
  <div class="conversation" id="builtConversation"></div>
 </section>
 
@@ -108,7 +108,8 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
   </div>
  </div>
  <div class="conversation" id="aiConversation"></div>
- <div class="actions"><button class="btn dark" onclick="swapRoles()">🔄 Swap roles</button><button class="btn primary" onclick="completeStage3()">Complete AI conversation →</button></div>
+ <div class="note" id="aiFeedback" aria-live="polite">Complete a few turns, then check your conversation.</div>
+ <div class="actions"><button class="btn dark" onclick="swapRoles()">🔄 Swap roles</button><button class="btn secondary" onclick="reviewStage(3)">✎ Edit conversation</button><button class="btn primary" onclick="completeStage3()">Check conversation →</button></div>
 </section>
 
 <!-- STAGE 4 -->
@@ -118,7 +119,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
  <div class="paragraph" id="storyParagraph"></div>
  <div class="actions"><button class="btn secondary" onclick="speak(storyText())">🔊 Listen</button><button class="btn secondary" onclick="speak(storyText(),.65)">🐢 Slow</button><button class="btn primary" onclick="startReading()">🎤 Start reading</button></div>
  <div id="readingStatus" class="note" style="margin-top:15px">Ready when you are.</div>
- <div class="actions"><button class="btn primary" onclick="completeStage4()">Finish reading →</button></div>
+ <div class="actions"><button class="btn secondary" onclick="reviewStage(1)">✎ Edit my story</button><button class="btn primary" onclick="completeStage4()">Check reading →</button></div>
 </section>
 
 <!-- STAGE 5 -->
@@ -131,6 +132,7 @@ h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:12px 0}.hero p{font-si
  </div>
  <div class="actions"><button class="btn primary" onclick="startCamera()">📹 Open camera</button><button class="btn dark" onclick="startFinalRecording()">⏺ Record achievement</button><button class="btn secondary" onclick="stopFinalRecording()">⏹ Stop</button></div>
  <canvas id="recordingCanvas" class="recording-canvas" width="1280" height="720"></canvas>
+ <video id="recordingPreview" class="recording-preview" autoplay muted playsinline></video>
  <div id="recordingStatus" class="note" style="margin-top:15px">The recording will include the student and certificate together, then download automatically.</div>
  <div class="actions"><button class="btn success" onclick="finishGame()">🎉 Complete My English Story</button></div>
 </section>
@@ -165,6 +167,16 @@ let state=load()||{stage:1,profile:{},built:[],ai:[],roleSwap:false,reading:fals
 function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));document.getElementById("saveState").textContent="Saved just now";setTimeout(()=>document.getElementById("saveState").textContent="Saved locally",800)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function invalidateAfterProfileEdit(){
+ if(!state.profileSubmitted)return;
+ state.stage=2;state.profileSubmitted=false;state.built=[];state.ai=[];state.aiDone=false;state.reading=false;state.readingScore=0;state.roleSwap=false;aiIndex=0;
+ save();
+}
+function reviewStage(stage){
+ if(stage===1){invalidateAfterProfileEdit();renderProfile();renderCategories();goStage(1);return}
+ if(stage===3){state.stage=Math.min(state.stage,3);state.ai=[];state.aiDone=false;aiIndex=0;renderAI();save();goStage(3);return}
+ goStage(stage);
+}
 function renderStats(){document.getElementById("starCount").textContent=state.stars||0;document.getElementById("pointCount").textContent=state.points||0}
 function awardStage(stage,points,stars){
  state.awards=state.awards||{};
@@ -175,7 +187,7 @@ function init(){
  renderProfile();renderCategories();renderBuilder();renderConversation();renderAI();renderStory();renderCertificate();renderStats();goStage(Math.min(5,state.stage||1));
 }
 function renderProfile(){
- document.getElementById("profileFields").innerHTML=fields.map(([id,label,ph])=>`<div class="field"><label>${label}</label><input id="f_${id}" value="${esc(state.profile[id]||"")}" placeholder="${ph}" oninput="updateProfileProgress()"></div>`).join("");
+ document.getElementById("profileFields").innerHTML=fields.map(([id,label,ph])=>`<div class="field"><label>${label}</label><input id="f_${id}" value="${esc(state.profile[id]||"")}" placeholder="${ph}" oninput="invalidateAfterProfileEdit();updateProfileProgress()"></div>`).join("");
  updateProfileProgress();
 }
 function updateProfileProgress(){
@@ -188,13 +200,14 @@ function renderCategories(){
 }
 function labelFor(id){return id.replace("best","Best ").replace(/^./,c=>c.toUpperCase())}
 function cap(s){return s.replace(/\b\w/g,c=>c.toUpperCase())}
-function choose(id,x){state.profile[id]=x;document.getElementById("f_"+id).value=x;renderCategories();updateProfileProgress();save()}
+function choose(id,x){state.profile[id]=x;document.getElementById("f_"+id).value=x;invalidateAfterProfileEdit();renderCategories();updateProfileProgress();save()}
 function collectProfile(){fields.forEach(([id])=>state.profile[id]=(document.getElementById("f_"+id)?.value||"").trim())}
 function completeStage1(){
  collectProfile();
  updateProfileProgress();
  const missing=fields.filter(([id])=>!state.profile[id]);
  if(missing.length){toast("Please complete: "+missing[0][1]);return}
+ state.profileSubmitted=true;
  awardStage(1,10,1);
  state.stage=Math.max(state.stage,2);save();renderBuilder();goStage(2);
 }
@@ -263,9 +276,13 @@ function renderAI(){
  const q=questions[aiIndex]||questions[0];
  document.getElementById("aiQuestion").textContent=state.roleSwap?sentenceFor(q):q[1];
  document.getElementById("aiConversation").innerHTML=state.ai.map(x=>`<div class="bubble ${x.role==="AI"?"a":"b"}"><div class="role">${x.role}</div>${esc(x.text)}</div>`).join("")||'<p class="muted">Your conversation will appear here.</p>';
+ const feedback=document.getElementById("aiFeedback");
+ if(feedback)feedback.textContent=`${Math.min(Math.floor((state.ai||[]).length/2),questions.length)} of ${questions.length} answers submitted. You can edit and try again.`;
 }
 function speak(text,rate=1){if(!("speechSynthesis"in window)){toast("Speech playback is not available in this browser.");return}speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=rate;speechSynthesis.speak(u)}
 function aiReplay(){speak(document.getElementById("aiQuestion").textContent)}
+function normalizeAnswer(text){return String(text||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim()}
+function answerMatches(q,text){const expected=normalizeAnswer(answerFor(q)),spoken=normalizeAnswer(text);return Boolean(expected&&spoken.includes(expected))}
 let recognition=null,listening=false;
 function toggleMic(){
  if(listening){recognition?.stop();return}
@@ -280,17 +297,23 @@ function toggleMic(){
 }
 function acceptAnswer(text){
  document.getElementById("aiTranscript").textContent=text;
- const q=questions[aiIndex];state.ai.push({role:state.roleSwap?"Student":"AI",text:state.roleSwap?sentenceFor(q):q[1]});
+ const q=questions[aiIndex],correct=!state.roleSwap&&answerMatches(q,text);state.ai.push({role:state.roleSwap?"Student":"AI",text:state.roleSwap?sentenceFor(q):q[1]});
  state.ai.push({role:state.roleSwap?"AI":"Student",text:text});
  aiIndex++;
  if(aiIndex>=questions.length){aiIndex=0;state.aiDone=true}
- renderAI();save();
+ renderAI();
+ const feedback=document.getElementById("aiFeedback");
+ if(feedback)feedback.textContent=state.roleSwap?"Role-play answer saved. Switch roles back to check your answers.":correct?`✓ Good answer. Model sentence: ${sentenceFor(q)}`:`Try again next time. Model sentence: ${sentenceFor(q)}`;
+ save();
  if(!state.roleSwap && aiIndex<questions.length)speak(questions[aiIndex][1]);
 }
 function acceptPracticeAnswer(){const v=document.getElementById("practiceAnswer").value.trim();if(v)acceptAnswer(v);else toast("Type an answer first.")}
 function swapRoles(){state.roleSwap=!state.roleSwap;aiIndex=0;toast(state.roleSwap?"Roles swapped: you ask, AI answers.":"Roles restored: AI asks, you answer.");renderAI();save();speak(document.getElementById("aiQuestion").textContent)}
 function completeStage3(){
  if((state.ai||[]).length<6){toast("Have a few turns with the AI first.");return}
+ const answerCount=Math.floor(state.ai.length/2);
+ const feedback=document.getElementById("aiFeedback");
+ if(feedback)feedback.textContent=`Conversation check: ${answerCount}/${questions.length} answers submitted. Review any answer with Edit conversation.`;
  awardStage(3,20,2);
  state.stage=Math.max(state.stage,4);save();renderStory();goStage(4);
 }
@@ -315,12 +338,14 @@ function startReading(){
  r.start();
 }
 function completeStage4(){
+ if(state.readingScore!==undefined&&!state.readingScore){toast("Read your story once, then try again.");return}
  awardStage(4,20,2);
  state.stage=Math.max(state.stage,5);save();renderCertificate();goStage(5);
 }
 let stream=null,recorder=null,chunks=[],recordingAnimation=null,recordingCanvasStream=null;
 async function startCamera(){
- try{if(!navigator.mediaDevices?.getUserMedia)throw new Error("media-unavailable");stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});camera.srcObject=stream;cameraPlaceholder.style.display="none";recordingStatus.textContent="Camera and microphone are ready."}
+ const camera=document.getElementById("camera"),cameraPlaceholder=document.getElementById("cameraPlaceholder"),recordingStatus=document.getElementById("recordingStatus");
+ try{if(!navigator.mediaDevices?.getUserMedia)throw new Error("media-unavailable");stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});camera.srcObject=stream;await new Promise(resolve=>{if(camera.readyState>=1)resolve();else camera.onloadedmetadata=resolve});await camera.play();cameraPlaceholder.style.display="none";recordingStatus.textContent="Camera and microphone are ready."}
  catch(e){recordingStatus.textContent="Camera/microphone permission was not granted. The certificate can still be completed.";toast("Please allow camera and microphone access.")}
 }
 function drawCertificateForRecording(ctx,width,height){
@@ -333,21 +358,26 @@ function drawCertificateForRecording(ctx,width,height){
  ctx.fillStyle="#14213d";ctx.font="18px Arial";ctx.fillText("I introduced myself, talked about my life,",width/2,445);ctx.fillText("had a conversation in English, and read my story.",width/2,475);ctx.fillStyle="#d4af37";ctx.font="bold 24px Georgia";ctx.fillText("Well done!",width/2,555);
 }
 function drawRecordingFrame(){
- const canvas=document.getElementById("recordingCanvas"),ctx=canvas.getContext("2d"),half=canvas.width/2;
+ const canvas=document.getElementById("recordingCanvas"),camera=document.getElementById("camera"),ctx=canvas.getContext("2d"),half=canvas.width/2;
  ctx.fillStyle="#101a2d";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.save();ctx.beginPath();ctx.rect(0,0,half,canvas.height);ctx.clip();
- if(camera.readyState>=2){const scale=Math.max(half/camera.videoWidth,canvas.height/camera.videoHeight),w=camera.videoWidth*scale,h=camera.videoHeight*scale;ctx.drawImage(camera,(half-w)/2,(canvas.height-h)/2,w,h)}else{ctx.fillStyle="#fff";ctx.font="28px Arial";ctx.textAlign="center";ctx.fillText("Camera starting…",half/2,canvas.height/2)}ctx.restore();
+ if(camera.readyState>=2&&camera.videoWidth>0&&camera.videoHeight>0){const scale=Math.max(half/camera.videoWidth,canvas.height/camera.videoHeight),w=camera.videoWidth*scale,h=camera.videoHeight*scale;ctx.drawImage(camera,(half-w)/2,(canvas.height-h)/2,w,h)}else{ctx.fillStyle="#fff";ctx.font="28px Arial";ctx.textAlign="center";ctx.fillText("Camera starting…",half/2,canvas.height/2)}ctx.restore();
  drawCertificateForRecording(ctx,half,canvas.height);ctx.fillStyle="#d4af37";ctx.fillRect(half-2,0,4,canvas.height);recordingAnimation=requestAnimationFrame(drawRecordingFrame);
 }
 function supportedRecordingType(){return ["video/mp4;codecs=h264,aac","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(type=>window.MediaRecorder?.isTypeSupported?.(type))||""}
 async function startFinalRecording(){
+ const camera=document.getElementById("camera"),recordingPreview=document.getElementById("recordingPreview"),recordingStatus=document.getElementById("recordingStatus");
  if(!stream)await startCamera();
  if(!stream){toast("Camera access is required for recording.");return}
+ if(camera.readyState<2||!camera.videoWidth){toast("Camera is still starting. Try recording again in a moment.");return}
  const canvas=document.getElementById("recordingCanvas");
  if(!canvas.captureStream||!window.MediaRecorder){recordingStatus.textContent="This browser cannot record a combined camera and certificate video. Please use a current Chrome, Edge, Firefox, or Safari browser.";return}
  const mimeType=supportedRecordingType();if(!mimeType){recordingStatus.textContent="Video recording is not supported by this browser.";return}
- chunks=[];recordingCanvasStream=canvas.captureStream(30);stream.getAudioTracks().forEach(track=>recordingCanvasStream.addTrack(track));
+ const audioTracks=stream.getAudioTracks().filter(track=>track.readyState==="live");
+ if(!audioTracks.length){recordingStatus.textContent="The microphone is not available. Please reopen the camera and allow microphone access.";return}
+ chunks=[];recordingCanvasStream=canvas.captureStream(30);audioTracks.forEach(track=>recordingCanvasStream.addTrack(track));
+ recordingPreview.srcObject=recordingCanvasStream;recordingPreview.classList.add("visible");await recordingPreview.play();
  recorder=new MediaRecorder(recordingCanvasStream,{mimeType});recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
- recorder.onstop=()=>{cancelAnimationFrame(recordingAnimation);recordingCanvasStream?.getVideoTracks().forEach(track=>track.stop());const extension=mimeType.includes("mp4")?"mp4":"webm",blob=new Blob(chunks,{type:mimeType}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`my-english-story-achievement.${extension}`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);recordingStatus.textContent=`Recording downloaded as ${extension.toUpperCase()}.`;toast("Your achievement video was downloaded.")};
+ recorder.onstop=()=>{cancelAnimationFrame(recordingAnimation);recordingPreview.pause();recordingPreview.srcObject=null;recordingPreview.classList.remove("visible");recordingCanvasStream?.getTracks().forEach(track=>track.stop());const extension=mimeType.includes("mp4")?"mp4":"webm",blob=new Blob(chunks,{type:mimeType}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`my-english-story-achievement.${extension}`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);recordingStatus.textContent=`Recording downloaded as ${extension.toUpperCase()}.`;toast("Your achievement video was downloaded.")};
  drawRecordingFrame();recorder.start(250);recordingStatus.textContent="⏺ Recording student and certificate together…";setTimeout(()=>{if(recorder?.state==="recording")stopFinalRecording()},30000)
 }
 function stopFinalRecording(){if(recorder&&recorder.state==="recording"){recorder.stop();recordingStatus.textContent="Finishing and downloading recording…"}}
